@@ -133,7 +133,7 @@ data "aws_iam_policy_document" "codebuild" {
 }
 
 module "codebuild" {
-  source                      = "git::https://github.com/cloudposse/terraform-aws-codebuild.git?ref=tags/0.17.0"
+  source                      = "git::https://github.com/drselump14/terraform-aws-codebuild.git?ref=master"
   namespace                   = var.namespace
   name                        = var.name
   stage                       = var.stage
@@ -150,6 +150,8 @@ module "codebuild" {
   image_tag                   = var.image_tag
   github_token                = var.github_oauth_token
   environment_variables       = var.environment_variables
+  cache_type                  = var.codebuild_cache_type
+  local_cache_modes           = var.codebuild_local_cache_modes
   cache_bucket_suffix_enabled = var.codebuild_cache_bucket_suffix_enabled
 }
 
