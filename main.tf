@@ -297,3 +297,57 @@ resource "aws_codepipeline" "source_build" {
     }
   }
 }
+
+############## Create AWS Webhook ##########################
+resource "aws_codepipeline_webhook" "webhook" {
+  count           = var.enabled && !var.poll_source_changes ? 1 : 0
+  name            = "${local.codepipeline_id}-webhook"
+  authentication  = "GITHUB_HMAC"
+  target_action   = "Source"
+  target_pipeline = "${local.codepipeline_id}"
+
+  authentication_configuration {
+    secret_token  = "${local.webhook_secret}"
+  }
+
+  filter {
+    json_path     = "$.ref"
+    match_equals  = "refs/heads/{Branch}"
+  }
+}
+#############################################################
+
+############## Create Github Webhook ##########################
+resource "random_string" "webhook_secret" {
+  length = 32
+
+  # Special characters are not allowed in webhook secret (AWS silently ignores webhook callbacks)
+  special = false
+}
+
+locals {
+  webhook_secret  = "${join("", random_string.webhook_secret.*.result)}"
+  webhook_url     = "${join("", aws_codepipeline_webhook.webhook.*.url)}"
+  codepipeline_id = coalesce(join("", aws_codepipeline.source_build.*.id), join("", aws_codepipeline.source_build_deploy.*.id))
+}
+
+provider "github" {
+  token        = var.github_oauth_token
+  organization = var.repo_owner
+}
+
+resource "github_repository_webhook" "default" {
+  count           = var.enabled && !var.poll_source_changes ? 1 : 0
+  repository = var.repo_name
+
+  configuration {
+    url          = "${local.webhook_url}"
+    content_type = "json"
+    secret       = "${local.webhook_secret}"
+    insecure_ssl = false
+  }
+
+  events = ["push"]
+}
+#############################################################
+

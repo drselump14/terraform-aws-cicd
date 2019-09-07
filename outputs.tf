@@ -35,7 +35,7 @@ output "codebuild_badge_url" {
 
 output "codepipeline_id" {
   description = "CodePipeline ID"
-  value       = coalesce(join("", aws_codepipeline.source_build.*.id), join("", aws_codepipeline.source_build_deploy.*.id))
+  value       = local.codepipeline_id
 }
 
 output "codepipeline_arn" {
